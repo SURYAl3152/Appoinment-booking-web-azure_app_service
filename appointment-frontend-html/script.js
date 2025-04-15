@@ -4,7 +4,7 @@ const emailInput = document.getElementById('email');
 const dateInput = document.getElementById('date');
 const list = document.getElementById('appointments-list');
 
-const API = 'http://localhost:8000/appointments';
+const API = '/appointments';
 
 function renderAppointments(data) {
   list.innerHTML = '';
