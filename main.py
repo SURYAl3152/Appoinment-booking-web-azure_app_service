@@ -1,27 +1,44 @@
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel  
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from models import Appointment, AppointmentCreate, AppointmentOut
 from database import SessionLocal, engine, Base
 from typing import List
 from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
-# ✅ Only declare app ONCE
+# ✅ Initialize app
 app = FastAPI()
 
-# ✅ Add CORS middleware
+# ✅ Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ✅ Create DB tables
 Base.metadata.create_all(bind=engine)
 
-# Database session dependency
+# ✅ Mount static directory if needed
+if os.path.isdir("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ✅ Serve index.html at root
+@app.get("/", response_class=HTMLResponse)
+def serve_homepage():
+    try:
+        with open("index.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
+
+# ✅ Database dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -29,7 +46,7 @@ def get_db():
     finally:
         db.close()
 
-# Pydantic schemas
+# ✅ Pydantic schemas
 class AppointmentCreate(BaseModel):
     name: str
     email: str
@@ -44,7 +61,7 @@ class AppointmentOut(BaseModel):
     class Config:
         orm_mode = True
 
-# Routes
+# ✅ API routes
 @app.post("/appointments/", response_model=AppointmentOut)
 def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get_db)):
     db_appointment = Appointment(**appointment.dict())
