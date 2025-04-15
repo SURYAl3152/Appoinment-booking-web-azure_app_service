@@ -1,0 +1,48 @@
+# azure-pipelines.yml
+
+trigger:
+  branches:
+    include:
+      - main  # Runs pipeline on push to main branch
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  pythonVersion: '3.11'
+
+steps:
+# Step 1: Set Python version
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(pythonVersion)'
+
+# Step 2: Install dependencies
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
+
+# Step 3: Archive the app for deployment (includes HTML, Python files)
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '.'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+    replaceExistingArchive: true
+  displayName: 'Package app files'
+
+# Step 4: Publish artifact to pipeline
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+
+# Step 5: Deploy to Azure App Service
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: '<your-service-connection-name>'  # Replace this
+    appName: '<your-app-service-name>'                    # Replace this
+    package: '$(Pipeline.Workspace)/drop/app.zip'
+  displayName: 'Deploy to Azure App Service'
