@@ -42,7 +42,7 @@ steps:
 # Step 5: Deploy to Azure App Service
 - task: AzureWebApp@1
   inputs:
-    azureSubscription: '<your-service-connection-name>'  # Replace this
-    appName: '<your-app-service-name>'                    # Replace this
+    azureSubscription: 'Surya Loganathan'  
+    appName: 'appointment-app-surya'                    
     package: '$(Pipeline.Workspace)/drop/app.zip'
   displayName: 'Deploy to Azure App Service'
