@@ -1,19 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+import os
 
-# Azure SQL Server connection string
-DATABASE_URL = (
-    "mssql+pyodbc://surya:Admin%40123@appionmentdb.database.windows.net:1433/"
-    "Appionmentdb?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&"
-    "TrustServerCertificate=no&Connection+Timeout=30"
-)
+load_dotenv()
 
-# Create the SQLAlchemy engine
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+print("DATABASE_URL:", repr(DATABASE_URL))
+
 engine = create_engine(DATABASE_URL)
-
-# Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
 Base = declarative_base()

@@ -1,19 +1,19 @@
 from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from models import Appointment, AppointmentCreate, AppointmentOut
-from database import SessionLocal, engine, Base
 from typing import List
 from datetime import datetime
 from sqlalchemy.orm import Session
-from fastapi.middleware.cors import CORSMiddleware
 import os
 
-# ✅ Initialize app
+from database import SessionLocal, engine, Base
+from models import Appointment
+
 app = FastAPI()
 
-# ✅ Enable CORS
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,23 +22,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Create DB tables
+# Create DB tables
 Base.metadata.create_all(bind=engine)
 
-# ✅ Mount static directory if needed
-if os.path.isdir("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+# Serve static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ✅ Serve index.html at root
+# Serve homepage
 @app.get("/", response_class=HTMLResponse)
-def serve_homepage():
-    try:
-        with open("index.html", "r") as f:
-            return f.read()
-    except FileNotFoundError:
-        return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
+def serve_home():
+    return FileResponse(os.path.join("static", "index.html"))
 
-# ✅ Database dependency
+# Dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -46,7 +41,7 @@ def get_db():
     finally:
         db.close()
 
-# ✅ Pydantic schemas
+# Pydantic models
 class AppointmentCreate(BaseModel):
     name: str
     email: str
@@ -61,7 +56,6 @@ class AppointmentOut(BaseModel):
     class Config:
         orm_mode = True
 
-# ✅ API routes
 @app.post("/appointments/", response_model=AppointmentOut)
 def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get_db)):
     db_appointment = Appointment(**appointment.dict())
@@ -74,12 +68,12 @@ def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get
 def read_appointments(db: Session = Depends(get_db)):
     return db.query(Appointment).all()
 
-@app.put("/appointments/{appointment_id}")
+@app.put("/appointments/{appointment_id}", response_model=AppointmentOut)
 def update_appointment(appointment_id: int, appointment: AppointmentCreate, db: Session = Depends(get_db)):
     db_appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-    if db_appointment is None:
+    if not db_appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
-    
+
     for key, value in appointment.dict().items():
         setattr(db_appointment, key, value)
 
@@ -90,7 +84,7 @@ def update_appointment(appointment_id: int, appointment: AppointmentCreate, db: 
 @app.delete("/appointments/{appointment_id}")
 def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     db_appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-    if db_appointment is None:
+    if not db_appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
 
     db.delete(db_appointment)
