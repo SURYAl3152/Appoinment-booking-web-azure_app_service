@@ -31,5 +31,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: Appoinmentdb
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILEAZUREAPPSERVICE_PUBLISHPROFILE_7DB16DAF9E634EB6A20F3DF96F4B961D }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: app.zip
